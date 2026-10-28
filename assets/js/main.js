@@ -160,6 +160,75 @@
   });
 
   /**
+   * Switch between the photo-only project gallery and category project details.
+   */
+  document.querySelectorAll('.project-showcase').forEach(function(showcase) {
+    const filters = showcase.querySelectorAll('.project-filters button');
+    const gallery = showcase.querySelector('.project-gallery-all');
+    const details = showcase.querySelector('.project-detail-list');
+
+    if (!gallery || !details || filters.length === 0) return;
+
+    let galleryWidth = 0;
+    function layoutProjectGallery(forceLayout) {
+      const currentWidth = gallery.clientWidth;
+      if (!currentWidth || (!forceLayout && currentWidth === galleryWidth)) return;
+      galleryWidth = currentWidth;
+
+      const styles = getComputedStyle(gallery);
+      const rowHeight = parseFloat(styles.gridAutoRows);
+      const rowGap = parseFloat(styles.rowGap);
+
+      gallery.querySelectorAll('.project-gallery-tile').forEach(function(tile) {
+        const image = tile.querySelector('img');
+        if (!image || !image.naturalWidth || !image.clientWidth) return;
+
+        const imageHeight = image.clientWidth * image.naturalHeight / image.naturalWidth;
+        const borderHeight = 2 * parseFloat(getComputedStyle(tile).borderTopWidth || '0');
+        const span = Math.ceil((imageHeight + borderHeight + rowGap) / (rowHeight + rowGap));
+        tile.style.gridRowEnd = 'span ' + span;
+      });
+    }
+
+    gallery.querySelectorAll('.project-gallery-tile img').forEach(function(image) {
+      image.addEventListener('load', function() {
+        layoutProjectGallery(true);
+      });
+    });
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(layoutProjectGallery).observe(gallery);
+    } else {
+      window.addEventListener('resize', layoutProjectGallery);
+    }
+    window.addEventListener('load', function() {
+      layoutProjectGallery(true);
+    });
+    layoutProjectGallery(true);
+
+    filters.forEach(function(button) {
+      button.addEventListener('click', function() {
+        const selectedFilter = button.getAttribute('data-filter');
+        const showAllGallery = selectedFilter === 'all';
+
+        gallery.hidden = !showAllGallery;
+        details.hidden = showAllGallery;
+        details.querySelectorAll('video').forEach(function(video) {
+          video.pause();
+        });
+        details.querySelectorAll('[data-project-category]').forEach(function(project) {
+          project.hidden = !showAllGallery && project.getAttribute('data-project-category') !== selectedFilter;
+        });
+
+        filters.forEach(function(filterButton) {
+          const isActive = filterButton === button;
+          filterButton.classList.toggle('filter-active', isActive);
+          filterButton.setAttribute('aria-pressed', String(isActive));
+        });
+      });
+    });
+  });
+
+  /**
    * Init swiper sliders
    */
   function initSwiper() {
@@ -217,5 +286,30 @@
   }
   window.addEventListener('load', navmenuScrollspy);
   document.addEventListener('scroll', navmenuScrollspy);
+
+  /**
+   * Typed.js hero text animation
+   */
+  function initTyped() {
+    const typedOutput = document.getElementById('typed-output');
+    if (!typedOutput || typeof Typed === 'undefined') return;
+
+    new Typed('#typed-output', {
+      strings: [
+        'AI/ML Engineer',
+        'Deep Learning & CV Developer',
+        'Data Science Enthusiast',
+        'Problem Solver & Builder'
+      ],
+      typeSpeed: 50,
+      backSpeed: 30,
+      backDelay: 2000,
+      startDelay: 400,
+      loop: true,
+      showCursor: true,
+      cursorChar: '|'
+    });
+  }
+  window.addEventListener('load', initTyped);
 
 })();
